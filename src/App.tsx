@@ -586,8 +586,11 @@ export default function App() {
       <header className="fixed top-0 w-full z-40 bg-bg-black/95 border-b border-gold-primary/10 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-12 w-auto rounded-sm" referrerPolicy="no-referrer" />
-            <span className="font-serif text-2xl tracking-wider text-white hidden sm:block">BLACK SCENT</span>
+            <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Black Scent Logo" className="h-14 w-auto object-contain" referrerPolicy="no-referrer" />
+            <div className="flex flex-col leading-none hidden sm:flex">
+              <span className="font-serif text-xl tracking-[0.2em] text-white">BLACK SCENT</span>
+              <span className="text-[8px] tracking-[0.4em] text-gold-primary uppercase mt-1">Parfums</span>
+            </div>
           </div>
 
           <nav className="hidden md:flex gap-8 text-sm uppercase tracking-widest text-gray-400">
@@ -835,19 +838,50 @@ export default function App() {
       </section>
 
       {/* Footer */}
-      <footer className="py-16 border-t border-white/5 text-center">
-        <div className="flex justify-center gap-8 mb-10 text-gray-600">
-          <a href="#" className="hover:text-gold-primary transition-colors"><Instagram size={20} /></a>
-          <a href="#" className="hover:text-gold-primary transition-colors"><Facebook size={20} /></a>
-          <a href="#" className="hover:text-gold-primary transition-colors"><MessageCircle size={20} /></a>
+      <footer className="py-20 border-t border-white/5 text-center bg-[#050505]">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col items-center mb-12">
+            <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Black Scent Logo" className="h-24 w-auto mb-6 opacity-80 hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+            <div className="flex justify-center gap-8 text-gray-500">
+              <a href="#" className="hover:text-gold-primary transition-all hover:scale-110"><Instagram size={22} /></a>
+              <a href="#" className="hover:text-gold-primary transition-all hover:scale-110"><Facebook size={22} /></a>
+              <a href="https://wa.me/573123456789" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><MessageCircle size={22} /></a>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-16 border-y border-white/5 py-12">
+            <div>
+              <h4 className="text-gold-primary uppercase tracking-widest text-xs font-bold mb-6">Nuestra Esencia</h4>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Black Scent Parfums redefine el lujo a través de inspiraciones olfativas de la más alta gama, permitiendo que la exclusividad sea parte de tu día a día.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-gold-primary uppercase tracking-widest text-xs font-bold mb-6">Atención al Cliente</h4>
+              <ul className="text-gray-500 text-sm space-y-3">
+                <li><a href="#" className="hover:text-white transition-colors">Envíos Nacionales</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Garantía de Calidad</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Preguntas Frecuentes</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-gold-primary uppercase tracking-widest text-xs font-bold mb-6">Contacto</h4>
+              <ul className="text-gray-500 text-sm space-y-3">
+                <li>Bogotá, Colombia</li>
+                <li>WhatsApp: +57 312 345 6789</li>
+                <li>Email: info@blackscent.com</li>
+              </ul>
+            </div>
+          </div>
+
+          <p className="text-gray-600 text-xs mb-4">&copy; {new Date().getFullYear()} Black Scent Parfums. Todos los derechos reservados.</p>
+          <p className="text-gray-700 text-[10px] max-w-2xl mx-auto leading-relaxed">
+            *Aviso Legal: Nuestras fragancias son inspiraciones olfativas de alta calidad y no tienen relación comercial con las marcas registradas originales. Los nombres se utilizan únicamente como referencia olfativa.
+          </p>
+          <button onClick={() => setIsLoginOpen(true)} className="mt-12 text-gray-800 hover:text-gold-primary transition-colors flex items-center gap-2 mx-auto text-[10px] uppercase tracking-[0.3em] font-bold">
+            <Lock size={12} /> Admin Access
+          </button>
         </div>
-        <p className="text-gray-600 text-sm mb-2">&copy; 2026 Black Scent Parfums.</p>
-        <p className="text-gray-700 text-[10px] max-w-lg mx-auto px-6">
-          *Nuestras fragancias son inspiraciones olfativas de alta calidad y no tienen relación comercial con las marcas registradas originales.
-        </p>
-        <button onClick={() => setIsLoginOpen(true)} className="mt-8 text-gray-800 hover:text-gold-primary transition-colors flex items-center gap-2 mx-auto text-xs uppercase tracking-widest">
-          <Lock size={12} /> Admin Access
-        </button>
       </footer>
 
       {/* --- Modals & Sidebars --- */}
@@ -871,7 +905,10 @@ export default function App() {
               className="fixed top-0 right-0 h-full w-full max-w-md bg-[#0a0a0a] border-l border-gold-primary/20 z-50 flex flex-col"
             >
               <div className="p-8 flex justify-between items-center border-b border-white/5">
-                <h2 className="font-serif text-2xl text-gold-primary">Tu Compra</h2>
+                <div className="flex items-center gap-3">
+                  <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-8 w-auto" referrerPolicy="no-referrer" />
+                  <h2 className="font-serif text-2xl text-gold-primary">Tu Compra</h2>
+                </div>
                 <button onClick={() => setIsCartOpen(false)} className="text-gray-500 hover:text-white"><X /></button>
               </div>
 
@@ -1039,7 +1076,10 @@ export default function App() {
               exit={{ opacity: 0, y: 20 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#111] border border-gold-primary/30 z-50 p-10"
             >
-              <h3 className="font-serif text-2xl text-center text-white mb-8">Acceso Administrativo</h3>
+              <div className="flex flex-col items-center mb-8">
+                <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-16 w-auto mb-4" referrerPolicy="no-referrer" />
+                <h3 className="font-serif text-2xl text-center text-white">Acceso Administrativo</h3>
+              </div>
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest text-gray-500 mb-2">Email</label>
@@ -1068,9 +1108,12 @@ export default function App() {
             >
               <div className="container mx-auto px-6 py-12">
                 <div className="flex justify-between items-center mb-12 border-b border-white/5 pb-8">
-                  <div>
-                    <h2 className="font-serif text-4xl text-gold-primary">Panel de Control</h2>
-                    <p className="text-gray-500 text-xs uppercase tracking-widest mt-2">Bienvenido, Administrador</p>
+                  <div className="flex items-center gap-6">
+                    <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-16 w-auto" referrerPolicy="no-referrer" />
+                    <div>
+                      <h2 className="font-serif text-4xl text-gold-primary">Panel de Control</h2>
+                      <p className="text-gray-500 text-xs uppercase tracking-widest mt-2">Bienvenido, Administrador</p>
+                    </div>
                   </div>
                   <div className="flex gap-4">
                     <div className="bg-white/5 px-6 py-3 rounded border border-white/10 text-center">
