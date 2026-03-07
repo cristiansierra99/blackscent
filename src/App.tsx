@@ -1000,13 +1000,13 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-[#0a0a0a] border border-gold-primary/30 z-50 p-8 md:p-12 overflow-y-auto max-h-[90vh]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-4xl bg-[#0a0a0a] border border-gold-primary/30 z-50 p-6 md:p-12 overflow-y-auto max-h-[90vh] shadow-2xl"
             >
-              <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white"><X /></button>
+              <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-500 hover:text-white z-10"><X /></button>
               
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="flex flex-col gap-8">
-                  <div className="bg-black p-8 rounded-lg aspect-square flex items-center justify-center">
+              <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
+                <div className="flex flex-col gap-6 md:gap-8">
+                  <div className="bg-black p-4 md:p-8 rounded-lg aspect-square flex items-center justify-center">
                     <img 
                       src={selectedProduct.img} 
                       className="max-w-full max-h-full object-contain" 
@@ -1020,8 +1020,8 @@ export default function App() {
                   
                   {/* Fragrantica Style Accords */}
                   {selectedProduct.accords && selectedProduct.accords.length > 0 && (
-                    <div className="space-y-1.5 mt-8">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 mb-6 text-center font-bold">Acordes Principales</p>
+                    <div className="space-y-1.5 mt-4 md:mt-8">
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 mb-4 md:mb-6 text-center font-bold">Acordes Principales</p>
                       <div className="flex flex-col items-start w-full">
                         {selectedProduct.accords.map((acc, i) => (
                           <motion.div 
@@ -1029,15 +1029,15 @@ export default function App() {
                             initial={{ width: 0, opacity: 0 }}
                             animate={{ width: `${acc.value}%`, opacity: 1 }}
                             transition={{ delay: 0.3 + (i * 0.1), duration: 0.8 }}
-                            className="h-8 flex items-center px-4 relative mb-1.5 rounded-r-full shadow-xl border-y border-r border-white/10"
+                            className="h-7 md:h-8 flex items-center px-3 md:px-4 relative mb-1.5 rounded-r-full shadow-xl border-y border-r border-white/10"
                             style={{ 
                               backgroundColor: acc.color,
-                              marginLeft: `${i * 12}px`, // Staggered diagonal effect
-                              maxWidth: `calc(100% - ${i * 12}px)`,
-                              minWidth: '80px'
+                              marginLeft: `${i * (window.innerWidth < 768 ? 6 : 12)}px`, // Reduced stagger on mobile
+                              maxWidth: `calc(100% - ${i * (window.innerWidth < 768 ? 6 : 12)}px)`,
+                              minWidth: '60px'
                             }}
                           >
-                            <span className="text-[10px] font-bold text-black uppercase tracking-widest whitespace-nowrap drop-shadow-sm">
+                            <span className="text-[9px] md:text-[10px] font-bold text-black uppercase tracking-widest whitespace-nowrap drop-shadow-sm">
                               {acc.name}
                             </span>
                           </motion.div>
@@ -1046,11 +1046,11 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <h2 className="font-serif text-4xl text-gold-primary mb-4">{selectedProduct.name}</h2>
-                  <div className="text-2xl font-serif text-white mb-6 italic">${selectedProduct.price}.00</div>
+                <div className="pt-4 md:pt-0">
+                  <h2 className="font-serif text-3xl md:text-4xl text-gold-primary mb-2 md:mb-4">{selectedProduct.name}</h2>
+                  <div className="text-xl md:text-2xl font-serif text-white mb-4 md:mb-6 italic">${selectedProduct.price}.00</div>
                   
-                  <div className="space-y-6 text-gray-400 font-light leading-relaxed">
+                  <div className="space-y-4 md:space-y-6 text-gray-400 font-light leading-relaxed text-sm md:text-base">
                     <p>{selectedProduct.desc}</p>
                     {selectedProduct.notes && (
                       <div className="p-4 bg-white/5 border-l-2 border-gold-primary italic">
@@ -1059,7 +1059,7 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                  <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
                     <button 
                       onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
                       className="flex-1 py-4 bg-gold-primary text-black font-bold uppercase tracking-widest text-xs hover:bg-gold-light transition-colors"
