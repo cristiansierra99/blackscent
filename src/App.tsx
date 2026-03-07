@@ -505,34 +505,49 @@ export default function App() {
   const handleUpdateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingProduct) return;
-    const form = e.currentTarget;
-    const fileInput = form.elements.namedItem('file') as HTMLInputElement;
-    let imageUrl = (form.elements.namedItem('img') as HTMLInputElement).value || editingProduct.img;
-
-    if (fileInput.files?.[0]) {
-      addToast("Subiendo nueva imagen...");
-      imageUrl = await uploadImage(fileInput.files[0]);
-    }
-
-    const data = {
-      name: (form.elements.namedItem('name') as HTMLInputElement).value,
-      price: Number((form.elements.namedItem('price') as HTMLInputElement).value),
-      oldPrice: (form.elements.namedItem('oldPrice') as HTMLInputElement).value ? Number((form.elements.namedItem('oldPrice') as HTMLInputElement).value) : null,
-      category: (form.elements.namedItem('category') as HTMLSelectElement).value,
-      family: (form.elements.namedItem('family') as HTMLSelectElement).value,
-      accords: (form as any)._accords || editingProduct.accords || [],
-      stock: (form.elements.namedItem('stock') as HTMLSelectElement).value as any,
-      targetDate: (form.elements.namedItem('targetDate') as HTMLInputElement).value,
-      desc: (form.elements.namedItem('desc') as HTMLInputElement).value,
-      notes: (form.elements.namedItem('notes') as HTMLTextAreaElement).value,
-      img: imageUrl
-    };
+    
     try {
+      const form = e.currentTarget;
+      const fileInput = form.elements.namedItem('file') as HTMLInputElement;
+      const imgInput = form.elements.namedItem('img') as HTMLInputElement;
+      const nameInput = form.elements.namedItem('name') as HTMLInputElement;
+      const priceInput = form.elements.namedItem('price') as HTMLInputElement;
+      const oldPriceInput = form.elements.namedItem('oldPrice') as HTMLInputElement;
+      const categorySelect = form.elements.namedItem('category') as HTMLSelectElement;
+      const familySelect = form.elements.namedItem('family') as HTMLSelectElement;
+      const stockSelect = form.elements.namedItem('stock') as HTMLSelectElement;
+      const targetDateInput = form.elements.namedItem('targetDate') as HTMLInputElement;
+      const descInput = form.elements.namedItem('desc') as HTMLInputElement;
+      const notesInput = form.elements.namedItem('notes') as HTMLTextAreaElement;
+
+      let imageUrl = imgInput?.value || editingProduct.img;
+
+      if (fileInput?.files?.[0]) {
+        addToast("Subiendo nueva imagen...");
+        imageUrl = await uploadImage(fileInput.files[0]);
+      }
+
+      const data = {
+        name: nameInput?.value || editingProduct.name,
+        price: Number(priceInput?.value || 0),
+        oldPrice: oldPriceInput?.value ? Number(oldPriceInput.value) : null,
+        category: categorySelect?.value || editingProduct.category,
+        family: familySelect?.value || editingProduct.family || '',
+        accords: (form as any)._accords || editingProduct.accords || [],
+        stock: (stockSelect?.value as any) || editingProduct.stock,
+        targetDate: targetDateInput?.value || editingProduct.targetDate || '',
+        desc: descInput?.value || editingProduct.desc,
+        notes: notesInput?.value || editingProduct.notes || '',
+        img: imageUrl
+      };
+
+      console.log("Updating product:", editingProduct.id, data);
       await updateDoc(doc(db, "products", editingProduct.id), data);
-      addToast("Producto actualizado");
+      addToast("Producto actualizado con éxito");
       setEditingProduct(null);
     } catch (err) {
-      addToast("Error al actualizar", "error");
+      console.error("Update error:", err);
+      addToast("Error al actualizar: " + (err instanceof Error ? err.message : "Error desconocido"), "error");
     }
   };
 
