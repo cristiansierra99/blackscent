@@ -439,13 +439,6 @@ export default function App() {
       
       const prompt = `Utiliza Google Search para encontrar información REAL y VERIFICADA sobre el perfume "${name}".
       
-      REQUISITOS DE IMAGEN (MÁXIMA PRIORIDAD):
-      1. Encuentra una URL DIRECTA a la imagen del frasco (debe terminar en .jpg, .png o .webp).
-      2. NO USES links de páginas web, blogs o resultados de búsqueda. DEBE ser el link del archivo de imagen.
-      3. FUENTES RECOMENDADAS: Sephora, Macy's, Nordstrom, Ulta, Dior.com, Chanel.com, o la web oficial de la marca.
-      4. PROHIBIDO: Fragrantica, FragranceNet, Amazon, Pinterest.
-      5. Si no encuentras un link directo que funcione, deja "imageUrl": "".
-      
       REQUISITOS DE DATOS:
       - Extrae los "Acordes Principales" (Main Accords) con su nombre, color representativo en hex y un valor de 0 a 100.
       - Descripción de 2 frases.
@@ -457,7 +450,6 @@ export default function App() {
         "description": "...",
         "notes": "...",
         "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-        "imageUrl": "URL_DIRECTA_AL_ARCHIVO_DE_IMAGEN",
         "accords": [{"name": "...", "color": "...", "value": 100}, ...]
       }
       Responde SOLO el JSON.`;
@@ -473,7 +465,8 @@ export default function App() {
           }
         });
       } catch (searchErr: any) {
-        if (searchErr.message?.includes('429') || searchErr.message?.includes('quota')) {
+        const errorString = JSON.stringify(searchErr).toLowerCase() + (searchErr.message || "").toLowerCase();
+        if (errorString.includes('429') || errorString.includes('quota') || errorString.includes('exhausted')) {
           console.warn("Cuota de búsqueda agotada, intentando sin Google Search...");
           addToast("Búsqueda limitada, usando conocimiento base...", "warning");
           response = await ai.models.generateContent({
@@ -485,7 +478,6 @@ export default function App() {
               "description": "...",
               "notes": "...",
               "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-              "imageUrl": "",
               "accords": [{"name": "...", "color": "...", "value": 100}, ...]
             }
             Responde SOLO el JSON.`,
@@ -514,31 +506,9 @@ export default function App() {
         if (match) familySelect.value = match.value;
       }
       
-      if (data.imageUrl) {
-        // Limpiar URL si es un redirect de Google
-        let cleanUrl = data.imageUrl;
-        try {
-          const urlObj = new URL(data.imageUrl);
-          if (urlObj.hostname.includes('google.com') && urlObj.searchParams.has('imgurl')) {
-            cleanUrl = urlObj.searchParams.get('imgurl') || data.imageUrl;
-          }
-        } catch (e) { /* ignore */ }
-
-        // Usar proxy para asegurar carga
-        const finalUrl = `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=800&fit=contain&we&n=-1`;
-        
-        const imgInput = formRef.elements.namedItem('img') as HTMLInputElement;
-        imgInput.value = finalUrl;
-        
-        // Update preview manually
-        const previewId = formRef.id === 'newProductForm' ? 'newProductPreview' : 'editProductPreview';
-        const preview = document.getElementById(previewId) as HTMLImageElement;
-        if (preview) preview.src = finalUrl;
-      }
-      
       (formRef as any)._accords = data.accords;
 
-      addToast("¡Información e imagen optimizada importadas!");
+      addToast("¡Información importada! Ahora pega el link de la imagen.");
     } catch (err: any) {
       console.error("Error en Smart Fill:", err);
       if (err.message === 'API_KEY_MISSING') {
