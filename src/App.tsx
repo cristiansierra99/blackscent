@@ -462,14 +462,41 @@ export default function App() {
       }
       Responde SOLO el JSON.`;
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+          }
+        });
+      } catch (searchErr: any) {
+        if (searchErr.message?.includes('429') || searchErr.message?.includes('quota')) {
+          console.warn("Cuota de búsqueda agotada, intentando sin Google Search...");
+          addToast("Búsqueda limitada, usando conocimiento base...", "warning");
+          response = await ai.models.generateContent({
+            model,
+            contents: `Genera información sobre el perfume "${name}" basándote en tu conocimiento. No uses Google Search.
+            
+            Devuelve JSON:
+            {
+              "description": "...",
+              "notes": "...",
+              "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
+              "imageUrl": "",
+              "accords": [{"name": "...", "color": "...", "value": 100}, ...]
+            }
+            Responde SOLO el JSON.`,
+            config: {
+              responseMimeType: "application/json"
+            }
+          });
+        } else {
+          throw searchErr;
         }
-      });
+      }
 
       console.log("Respuesta de IA recibida:", response);
       const data = JSON.parse(response.text || '{}');
