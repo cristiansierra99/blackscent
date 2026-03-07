@@ -67,6 +67,11 @@ const AIAssistant = ({ products }: { products: Product[] }) => {
     setIsTyping(true);
 
     try {
+      console.log("Iniciando chat con mensaje:", userMsg);
+      if (!process.env.GEMINI_API_KEY) {
+        console.error("GEMINI_API_KEY no encontrada en process.env para chat");
+        throw new Error('API_KEY_MISSING');
+      }
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const model = "gemini-3-flash-preview";
       
@@ -91,9 +96,15 @@ const AIAssistant = ({ products }: { products: Product[] }) => {
         contents: prompt,
       });
 
+      console.log("Respuesta de chat recibida:", response);
       setMessages(prev => [...prev, { role: 'ai', text: response.text || 'Lo siento, no pude procesar tu solicitud.' }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'ai', text: 'Lo siento, tuve un problema al conectar con mi esencia. Inténtalo de nuevo.' }]);
+    } catch (err: any) {
+      console.error("Error en Chat:", err);
+      if (err.message === 'API_KEY_MISSING') {
+        setMessages(prev => [...prev, { role: 'ai', text: '⚠️ Error de configuración: La llave de la IA (GEMINI_API_KEY) no ha sido configurada en el servidor de Azure. Por favor, contacta al administrador.' }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', text: 'Lo siento, tuve un problema al conectar con mi esencia. Inténtalo de nuevo.' }]);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -418,6 +429,11 @@ export default function App() {
     addToast("Buscando información en Google...");
 
     try {
+      console.log("Iniciando búsqueda inteligente para:", name);
+      if (!process.env.GEMINI_API_KEY) {
+        console.error("GEMINI_API_KEY no encontrada en process.env");
+        throw new Error('API_KEY_MISSING');
+      }
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const model = "gemini-3-flash-preview";
       
@@ -455,7 +471,9 @@ export default function App() {
         }
       });
 
+      console.log("Respuesta de IA recibida:", response);
       const data = JSON.parse(response.text || '{}');
+      console.log("Datos parseados:", data);
       
       if (data.description) (formRef.elements.namedItem('desc') as HTMLInputElement).value = data.description;
       if (data.notes) (formRef.elements.namedItem('notes') as HTMLTextAreaElement).value = data.notes;
@@ -494,9 +512,15 @@ export default function App() {
       (formRef as any)._accords = data.accords;
 
       addToast("¡Información e imagen optimizada importadas!");
-    } catch (err) {
-      console.error(err);
-      addToast("No pude encontrar la información exacta", "error");
+    } catch (err: any) {
+      console.error("Error en Smart Fill:", err);
+      if (err.message === 'API_KEY_MISSING') {
+        addToast("Error: GEMINI_API_KEY no configurada en Azure", "error");
+      } else if (err.message?.includes('429') || err.message?.includes('quota')) {
+        addToast("Cuota de IA agotada. Por favor, intenta de nuevo en unos minutos.", "error");
+      } else {
+        addToast(`Error: ${err.message || "No pude encontrar la información"}`, "error");
+      }
     } finally {
       setIsSmartLoading(false);
     }
@@ -1232,9 +1256,9 @@ export default function App() {
                           <div className="w-full aspect-square bg-black border border-gray-800 rounded flex items-center justify-center overflow-hidden mb-2">
                             <img 
                               id="newProductPreview"
-                              src="https://via.placeholder.com/400x400?text=Vista+Previa" 
+                              src="https://picsum.photos/seed/perfume/400/400" 
                               className="max-w-full max-h-full object-contain"
-                              onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=Error+de+Carga'}
+                              onError={(e) => (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/perfume/400/400'}
                             />
                           </div>
 
@@ -1255,7 +1279,7 @@ export default function App() {
                               } catch (err) { /* ignore */ }
                               
                               const preview = document.getElementById('newProductPreview') as HTMLImageElement;
-                              if (preview) preview.src = val || 'https://via.placeholder.com/400x400?text=Vista+Previa';
+                              if (preview) preview.src = val || 'https://picsum.photos/seed/perfume/400/400';
                             }}
                           />
                           <p className="text-[9px] text-gray-600 italic">Tip: En Google, clic derecho sobre la imagen y selecciona "Copiar dirección de imagen".</p>
@@ -1448,7 +1472,7 @@ export default function App() {
                       id="editProductPreview"
                       src={editingProduct.img} 
                       className="max-w-full max-h-full object-contain"
-                      onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=Error+de+Carga'}
+                      onError={(e) => (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/perfume/400/400'}
                     />
                   </div>
 
@@ -1469,7 +1493,7 @@ export default function App() {
                         } catch (err) { /* ignore */ }
 
                         const preview = document.getElementById('editProductPreview') as HTMLImageElement;
-                        if (preview) preview.src = val || 'https://via.placeholder.com/400x400?text=Vista+Previa';
+                        if (preview) preview.src = val || 'https://picsum.photos/seed/perfume/400/400';
                       }}
                     />
                     <button 
