@@ -3,7 +3,8 @@ import {
   Search, ShoppingBag, MessageCircle, Trash2, X, Plus, Minus, 
   Copy, LogOut, Lock, CheckCircle, AlertCircle, Loader2,
   ChevronRight, Instagram, Facebook, Sparkles, Upload, Send,
-  Wind, Droplets, Flame, Leaf, Zap
+  Wind, Droplets, Flame, Leaf, Zap,
+  Sun, Moon, Snowflake, Umbrella, Smile, Frown, Meh
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { 
@@ -34,6 +35,23 @@ interface Product {
     top: string[];
     heart: string[];
     base: string[];
+  };
+  ratings?: {
+    love: number;
+    like: number;
+    ok: number;
+    dislike: number;
+    hate: number;
+    total: number;
+    average: number;
+  };
+  usage?: {
+    winter: number;
+    spring: number;
+    summer: number;
+    autumn: number;
+    day: number;
+    night: number;
   };
   img: string;
 }
@@ -453,6 +471,8 @@ export default function App() {
       - Descripción de 2 frases.
       - Notas de Salida (Top Notes), Corazón (Heart Notes) y Fondo (Base Notes).
       - Familia Olfativa (DEBE ser uno de estos: citrico, amaderado, floral, oriental, fresco, frutal, cuero, almizclado, dulce, chipre, aromatico, especiado, fougere, acuatico).
+      - Extrae las Valoraciones de Usuarios (Puntuación): votos para "Me encanta", "Me gusta", "Me es indiferente", "No me gusta", "La odio", el total de votos y la calificación promedio (0-5).
+      - Extrae "Cuándo usarlo": porcentajes o valores (0-100) para Invierno, Primavera, Verano, Otoño, Día y Noche.
       
       Devuelve JSON:
       {
@@ -464,6 +484,12 @@ export default function App() {
           "top": ["nota1", "nota2", ...],
           "heart": ["nota1", "nota2", ...],
           "base": ["nota1", "nota2", ...]
+        },
+        "ratings": {
+          "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
+        },
+        "usage": {
+          "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
         }
       }
       Responde SOLO el JSON.`;
@@ -497,6 +523,12 @@ export default function App() {
                 "top": ["nota1", "nota2", ...],
                 "heart": ["nota1", "nota2", ...],
                 "base": ["nota1", "nota2", ...]
+              },
+              "ratings": {
+                "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
+              },
+              "usage": {
+                "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
               }
             }
             Responde SOLO el JSON.`,
@@ -527,6 +559,8 @@ export default function App() {
       
       (formRef as any)._accords = data.accords;
       (formRef as any)._composition = data.composition;
+      (formRef as any)._ratings = data.ratings;
+      (formRef as any)._usage = data.usage;
 
       addToast("¡Información importada! Ahora pega el link de la imagen.");
     } catch (err: any) {
@@ -576,6 +610,8 @@ export default function App() {
         family: familySelect?.value || editingProduct.family || '',
         accords: (form as any)._accords || editingProduct.accords || [],
         composition: (form as any)._composition || editingProduct.composition || null,
+        ratings: (form as any)._ratings || editingProduct.ratings || null,
+        usage: (form as any)._usage || editingProduct.usage || null,
         stock: (stockSelect?.value as any) || editingProduct.stock,
         targetDate: targetDateInput?.value || editingProduct.targetDate || '',
         desc: descInput?.value || editingProduct.desc,
@@ -1132,6 +1168,101 @@ export default function App() {
                         </div>
                       </div>
                     )}
+
+                    {/* User Ratings & Usage */}
+                    {(selectedProduct.ratings || selectedProduct.usage) && (
+                      <div className="mt-12 space-y-8">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold border-b border-white/5 pb-2 text-center">Valoraciones de Usuarios</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          {/* Puntuación */}
+                          {selectedProduct.ratings && (
+                            <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                              <div className="flex items-center gap-2 mb-6 text-gold-primary">
+                                <Smile size={16} />
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Puntuación</span>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {[
+                                  { label: 'Me encanta', key: 'love', color: 'bg-pink-500' },
+                                  { label: 'Me gusta', key: 'like', color: 'bg-emerald-500' },
+                                  { label: 'Me es indiferente', key: 'ok', color: 'bg-gray-500' },
+                                  { label: 'No me gusta', key: 'dislike', color: 'bg-orange-500' },
+                                  { label: 'La odio', key: 'hate', color: 'bg-red-500' }
+                                ].map((item) => {
+                                  const val = selectedProduct.ratings![item.key as keyof typeof selectedProduct.ratings] as number;
+                                  const total = selectedProduct.ratings!.total || 1;
+                                  const pct = (val / total) * 100;
+                                  
+                                  return (
+                                    <div key={item.key} className="space-y-1">
+                                      <div className="flex justify-between text-[9px] uppercase tracking-tighter text-gray-400">
+                                        <span>{item.label}</span>
+                                        <span>{val}</span>
+                                      </div>
+                                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div 
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${pct}%` }}
+                                          className={`h-full ${item.color}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              
+                              <div className="mt-6 pt-4 border-t border-white/5 text-center">
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                                  Calificación <span className="text-gold-primary font-bold">{selectedProduct.ratings.average}</span> de 5 con <span className="text-white">{selectedProduct.ratings.total}</span> votos
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Cuándo usarlo */}
+                          {selectedProduct.usage && (
+                            <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                              <div className="flex items-center gap-2 mb-6 text-gold-primary">
+                                <Sun size={16} />
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Cuándo usarlo</span>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                                {[
+                                  { label: 'Invierno', key: 'winter', icon: Snowflake, color: 'bg-blue-400' },
+                                  { label: 'Primavera', key: 'spring', icon: Leaf, color: 'bg-green-400' },
+                                  { label: 'Verano', key: 'summer', icon: Umbrella, color: 'bg-yellow-400' },
+                                  { label: 'Otoño', key: 'autumn', icon: Wind, color: 'bg-orange-400' },
+                                  { label: 'Día', key: 'day', icon: Sun, color: 'bg-amber-400' },
+                                  { label: 'Noche', key: 'night', icon: Moon, color: 'bg-indigo-400' }
+                                ].map((item) => {
+                                  const val = selectedProduct.usage![item.key as keyof typeof selectedProduct.usage] as number;
+                                  
+                                  return (
+                                    <div key={item.key} className="space-y-1">
+                                      <div className="flex items-center gap-2 text-[9px] uppercase tracking-tighter text-gray-400">
+                                        <item.icon size={10} />
+                                        <span>{item.label}</span>
+                                        <span className="ml-auto">{val}%</span>
+                                      </div>
+                                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div 
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${val}%` }}
+                                          className={`h-full ${item.color}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
@@ -1249,6 +1380,8 @@ export default function App() {
                           family: (form.elements.namedItem('family') as HTMLSelectElement).value,
                           accords: (form as any)._accords || [],
                           composition: (form as any)._composition || null,
+                          ratings: (form as any)._ratings || null,
+                          usage: (form as any)._usage || null,
                           stock: (form.elements.namedItem('stock') as HTMLSelectElement).value as any,
                           targetDate: (form.elements.namedItem('targetDate') as HTMLInputElement).value,
                           desc: (form.elements.namedItem('desc') as HTMLInputElement).value,
