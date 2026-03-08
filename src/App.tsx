@@ -30,6 +30,11 @@ interface Product {
   targetDate?: string;
   desc: string;
   notes?: string;
+  composition?: {
+    top: string[];
+    heart: string[];
+    base: string[];
+  };
   img: string;
 }
 
@@ -48,7 +53,7 @@ interface Subscriber {
 interface ToastData {
   id: number;
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'warning';
 }
 
 const AIAssistant = ({ products }: { products: Product[] }) => {
@@ -178,16 +183,20 @@ const AIAssistant = ({ products }: { products: Product[] }) => {
     </div>
   );
 };
-const Toast = ({ message, type = 'success', onClose }: { message: string, type?: 'success' | 'error', onClose: () => void, key?: React.Key }) => (
+const Toast = ({ message, type = 'success', onClose }: { message: string, type?: 'success' | 'error' | 'warning', onClose: () => void, key?: React.Key }) => (
   <motion.div 
     initial={{ opacity: 0, x: 50 }}
     animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: 50 }}
     className={`fixed top-20 right-5 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl border-l-4 ${
-      type === 'success' ? 'bg-[#111] border-gold-primary' : 'bg-[#111] border-red-500'
+      type === 'success' ? 'bg-[#111] border-gold-primary' : 
+      type === 'warning' ? 'bg-[#111] border-amber-500' :
+      'bg-[#111] border-red-500'
     }`}
   >
-    {type === 'success' ? <CheckCircle className="text-gold-primary w-5 h-5" /> : <AlertCircle className="text-red-500 w-5 h-5" />}
+    {type === 'success' ? <CheckCircle className="text-gold-primary w-5 h-5" /> : 
+     type === 'warning' ? <AlertCircle className="text-amber-500 w-5 h-5" /> :
+     <AlertCircle className="text-red-500 w-5 h-5" />}
     <span className="text-white text-sm font-medium">{message}</span>
     <button onClick={onClose} className="ml-2 text-gray-500 hover:text-white">
       <X size={16} />
@@ -307,7 +316,7 @@ export default function App() {
   }, [user, isAdminOpen]);
 
   // --- Helpers ---
-  const addToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const addToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
@@ -442,7 +451,7 @@ export default function App() {
       REQUISITOS DE DATOS:
       - Extrae los "Acordes Principales" (Main Accords) con su nombre, color representativo en hex y un valor de 0 a 100.
       - Descripción de 2 frases.
-      - Notas de Salida, Corazón y Fondo.
+      - Notas de Salida (Top Notes), Corazón (Heart Notes) y Fondo (Base Notes).
       - Familia Olfativa (DEBE ser uno de estos: citrico, amaderado, floral, oriental, fresco, frutal, cuero, almizclado, dulce, chipre, aromatico, especiado, fougere, acuatico).
       
       Devuelve JSON:
@@ -450,7 +459,12 @@ export default function App() {
         "description": "...",
         "notes": "...",
         "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-        "accords": [{"name": "...", "color": "...", "value": 100}, ...]
+        "accords": [{"name": "...", "color": "...", "value": 100}, ...],
+        "composition": {
+          "top": ["nota1", "nota2", ...],
+          "heart": ["nota1", "nota2", ...],
+          "base": ["nota1", "nota2", ...]
+        }
       }
       Responde SOLO el JSON.`;
 
@@ -478,7 +492,12 @@ export default function App() {
               "description": "...",
               "notes": "...",
               "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-              "accords": [{"name": "...", "color": "...", "value": 100}, ...]
+              "accords": [{"name": "...", "color": "...", "value": 100}, ...],
+              "composition": {
+                "top": ["nota1", "nota2", ...],
+                "heart": ["nota1", "nota2", ...],
+                "base": ["nota1", "nota2", ...]
+              }
             }
             Responde SOLO el JSON.`,
             config: {
@@ -507,6 +526,7 @@ export default function App() {
       }
       
       (formRef as any)._accords = data.accords;
+      (formRef as any)._composition = data.composition;
 
       addToast("¡Información importada! Ahora pega el link de la imagen.");
     } catch (err: any) {
@@ -555,6 +575,7 @@ export default function App() {
         category: categorySelect?.value || editingProduct.category,
         family: familySelect?.value || editingProduct.family || '',
         accords: (form as any)._accords || editingProduct.accords || [],
+        composition: (form as any)._composition || editingProduct.composition || null,
         stock: (stockSelect?.value as any) || editingProduct.stock,
         targetDate: targetDateInput?.value || editingProduct.targetDate || '',
         desc: descInput?.value || editingProduct.desc,
@@ -1057,6 +1078,60 @@ export default function App() {
                         <p className="text-sm text-gray-300">"{selectedProduct.notes}"</p>
                       </div>
                     )}
+
+                    {/* Fragrance Composition (Notes Pyramid) */}
+                    {selectedProduct.composition && (
+                      <div className="mt-8 space-y-6">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold border-b border-white/5 pb-2">Composición de la Fragancia</p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                          {/* Top Notes */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-gold-primary">
+                              <Wind size={14} />
+                              <span className="text-[10px] uppercase tracking-widest font-bold">Salida</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedProduct.composition.top.map((note, idx) => (
+                                <span key={idx} className="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300 border border-white/5">
+                                  {note}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Heart Notes */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-gold-primary">
+                              <Droplets size={14} />
+                              <span className="text-[10px] uppercase tracking-widest font-bold">Corazón</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedProduct.composition.heart.map((note, idx) => (
+                                <span key={idx} className="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300 border border-white/5">
+                                  {note}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Base Notes */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-gold-primary">
+                              <Leaf size={14} />
+                              <span className="text-[10px] uppercase tracking-widest font-bold">Fondo</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedProduct.composition.base.map((note, idx) => (
+                                <span key={idx} className="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300 border border-white/5">
+                                  {note}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
@@ -1173,6 +1248,7 @@ export default function App() {
                           category: (form.elements.namedItem('category') as HTMLSelectElement).value,
                           family: (form.elements.namedItem('family') as HTMLSelectElement).value,
                           accords: (form as any)._accords || [],
+                          composition: (form as any)._composition || null,
                           stock: (form.elements.namedItem('stock') as HTMLSelectElement).value as any,
                           targetDate: (form.elements.namedItem('targetDate') as HTMLInputElement).value,
                           desc: (form.elements.namedItem('desc') as HTMLInputElement).value,
