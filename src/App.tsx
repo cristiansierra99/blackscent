@@ -5,7 +5,7 @@ import {
   ChevronRight, Instagram, Facebook, Sparkles, Upload, Send,
   Wind, Droplets, Flame, Leaf, Zap,
   Sun, Moon, Snowflake, Umbrella, Smile, Frown, Meh,
-  ChevronDown
+  ChevronDown, Printer, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { 
@@ -301,6 +301,7 @@ export default function App() {
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [labelProduct, setLabelProduct] = useState<Product | null>(null);
 
   const faqs = [
     {
@@ -333,6 +334,14 @@ export default function App() {
       const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
       setProducts(prods);
       setLoading(false);
+
+      // Handle QR code deep link
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('p');
+      if (productId) {
+        const found = prods.find(p => p.id === productId);
+        if (found) setSelectedProduct(found);
+      }
     });
 
     // Track Visit
@@ -767,7 +776,7 @@ export default function App() {
       <header className="fixed top-0 w-full z-40 bg-bg-black/95 border-b border-gold-primary/10 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Black Scent Logo" className="h-14 w-auto object-contain" referrerPolicy="no-referrer" />
+            <img src="/logo.png" alt="Black Scent Logo" className="h-14 w-auto object-contain" referrerPolicy="no-referrer" />
             <div className="flex flex-col leading-none hidden sm:flex">
               <span className="font-serif text-xl tracking-[0.2em] text-white">BLACK SCENT</span>
               <span className="text-[8px] tracking-[0.4em] text-gold-primary uppercase mt-1">Parfums</span>
@@ -1108,7 +1117,7 @@ export default function App() {
       <footer className="py-20 border-t border-white/5 text-center bg-[#050505]">
         <div className="container mx-auto px-6">
           <div className="flex flex-col items-center mb-12">
-            <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Black Scent Logo" className="h-24 w-auto mb-6 opacity-80 hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+            <img src="/logo.png" alt="Black Scent Logo" className="h-24 w-auto mb-6 opacity-80 hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
             <div className="flex justify-center gap-8 text-gray-500">
               <a href="https://instagram.com/blackscent" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><Instagram size={22} /></a>
               <a href="https://facebook.com/blackscent" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><Facebook size={22} /></a>
@@ -1173,7 +1182,7 @@ export default function App() {
             >
               <div className="p-8 flex justify-between items-center border-b border-white/5">
                 <div className="flex items-center gap-3">
-                  <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-8 w-auto" referrerPolicy="no-referrer" />
+                  <img src="/logo.png" alt="Logo" className="h-8 w-auto" referrerPolicy="no-referrer" />
                   <h2 className="font-serif text-2xl text-gold-primary">Tu Compra</h2>
                 </div>
                 <button onClick={() => setIsCartOpen(false)} className="text-gray-500 hover:text-white"><X /></button>
@@ -1493,7 +1502,7 @@ export default function App() {
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#111] border border-gold-primary/30 z-50 p-10"
             >
               <div className="flex flex-col items-center mb-8">
-                <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-16 w-auto mb-4" referrerPolicy="no-referrer" />
+                <img src="/logo.png" alt="Logo" className="h-16 w-auto mb-4" referrerPolicy="no-referrer" />
                 <h3 className="font-serif text-2xl text-center text-white">Acceso Administrativo</h3>
               </div>
               <form onSubmit={handleLogin} className="space-y-6">
@@ -1525,7 +1534,7 @@ export default function App() {
               <div className="container mx-auto px-6 py-12">
                 <div className="flex justify-between items-center mb-12 border-b border-white/5 pb-8">
                   <div className="flex items-center gap-6">
-                    <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Logo" className="h-16 w-auto" referrerPolicy="no-referrer" />
+                    <img src="/logo.png" alt="Logo" className="h-16 w-auto" referrerPolicy="no-referrer" />
                     <div>
                       <h2 className="font-serif text-4xl text-gold-primary">Panel de Control</h2>
                       <p className="text-gray-500 text-xs uppercase tracking-widest mt-2">Bienvenido, Administrador</p>
@@ -1800,6 +1809,13 @@ export default function App() {
                                 <ChevronRight size={16} className="rotate-90" />
                               </button>
                               <button 
+                                onClick={() => setLabelProduct(prod)}
+                                className="p-2 bg-white/5 text-gray-500 hover:text-gold-primary transition-colors"
+                                title="Generar Etiqueta"
+                              >
+                                <Printer size={16} />
+                              </button>
+                              <button 
                                 onClick={async () => {
                                   const newStock = prod.stock === 'disponible' ? 'agotado' : 'disponible';
                                   await updateDoc(doc(db, "products", prod.id), { stock: newStock });
@@ -1980,6 +1996,288 @@ export default function App() {
                   <button type="submit" className="flex-1 py-4 bg-gold-primary text-black font-bold uppercase tracking-widest text-xs hover:bg-gold-light transition-colors">Guardar Cambios</button>
                 </div>
               </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Label Generator Modal */}
+      <AnimatePresence>
+        {labelProduct && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLabelProduct(null)}
+              className="fixed inset-0 bg-black/90 backdrop-blur-md z-[80]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-[#0a0a0a] border border-gold-primary/30 z-[90] p-8"
+            >
+              <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                <h3 className="text-gold-primary font-serif text-2xl">Generador de Etiqueta</h3>
+                <button onClick={() => setLabelProduct(null)} className="text-gray-500 hover:text-white"><X /></button>
+              </div>
+
+              <div className="flex flex-col items-center gap-8">
+                <div id="printable-label" className="bg-white text-black p-0 overflow-hidden relative shadow-2xl" style={{ width: '2in', height: '1.5in', minWidth: '2in', minHeight: '1.5in' }}>
+                  {/* Left Disclaimer (Vertical) */}
+                  <div className="absolute left-0 top-0 bottom-0 w-[3mm] bg-black flex items-center justify-center">
+                    <p className="text-[5pt] text-white uppercase tracking-tighter whitespace-nowrap -rotate-90 origin-center font-bold" style={{ width: '1.5in' }}>
+                      *Inspiración Olfativa de Alta Gama
+                    </p>
+                  </div>
+
+                  {/* Main Content */}
+                  <div className="ml-[5mm] mr-[12mm] h-full flex flex-col items-center justify-between py-[2mm] box-border">
+                    {/* Logo Area */}
+                    <div className="flex flex-col items-center w-full">
+                      <img 
+                        src="/logo.png" 
+                        alt="Logo" 
+                        className="h-[8mm] w-auto mb-1 object-contain grayscale"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="h-[0.2mm] w-[60%] bg-black/20 mb-1" />
+                      <p className="text-[6pt] uppercase text-gray-500 tracking-[0.3em] font-medium">Nuestra Impresión</p>
+                    </div>
+
+                    {/* Perfume Name */}
+                    <div className="flex-1 flex items-center justify-center w-full px-2">
+                      <p className="text-[15pt] font-serif font-black uppercase leading-tight text-center break-words tracking-tight">
+                        {labelProduct.name}
+                      </p>
+                    </div>
+                    
+                    {/* Footer Info */}
+                    <div className="w-full flex flex-col items-center gap-1">
+                      <div className="flex justify-between w-full items-end border-t border-black/10 pt-1">
+                        <div className="flex flex-col items-start">
+                          <p className="text-[6pt] font-mono font-bold text-gray-400">REF: B-{labelProduct.id.substring(0, 6).toUpperCase()}</p>
+                          <p className="text-[5pt] text-gray-400 uppercase tracking-widest">Santo Domingo, RD</p>
+                        </div>
+                        <p className="text-[9pt] font-black italic">30ml - 1.0oz</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="absolute right-[2mm] top-1/2 -translate-y-1/2 w-[9mm] h-[9mm] flex items-center justify-center p-[0.5mm] border border-black/5">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/?p=' + labelProduct.id)}`} 
+                      className="w-full h-full"
+                      alt="QR"
+                    />
+                  </div>
+                </div>
+
+                <div className="w-full space-y-4">
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Vista Previa (Tamaño Real 2" x 1.5")</p>
+                    <p className="text-xs text-gray-400">Etiqueta optimizada para frascos de 30ml. Incluye marca, nombre del perfume, código QR y detalles de origen.</p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      const printContent = document.getElementById('printable-label');
+                      if (!printContent) return;
+                      
+                      const printWindow = window.open('', '_blank');
+                      if (!printWindow) return;
+
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Etiqueta - ${labelProduct.name}</title>
+                            <style>
+                              @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+                              @page {
+                                size: 2in 1.5in;
+                                margin: 0;
+                              }
+                              body { 
+                                margin: 0; 
+                                padding: 0; 
+                                width: 2in; 
+                                height: 1.5in;
+                                overflow: hidden;
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                                font-family: 'Arial', sans-serif;
+                              }
+                              #label { 
+                                width: 2in; 
+                                height: 1.5in; 
+                                background: white; 
+                                color: black; 
+                                position: relative; 
+                                overflow: hidden;
+                                box-sizing: border-box;
+                              }
+                              .disclaimer-bar {
+                                position: absolute;
+                                left: 0; top: 0; bottom: 0;
+                                width: 3mm;
+                                background: black;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                              }
+                              .disclaimer-text {
+                                font-size: 5pt;
+                                color: white;
+                                text-transform: uppercase;
+                                white-space: nowrap;
+                                transform: rotate(-90deg);
+                                width: 1.5in;
+                                text-align: center;
+                                font-weight: bold;
+                                margin: 0;
+                              }
+                              .content {
+                                margin-left: 5mm;
+                                margin-right: 12mm;
+                                height: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: space-between;
+                                padding: 2mm 0;
+                                box-sizing: border-box;
+                              }
+                              .logo-area {
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                width: 100%;
+                              }
+                              .logo-img {
+                                height: 8mm;
+                                width: auto;
+                                margin-bottom: 1mm;
+                                filter: grayscale(1);
+                              }
+                              .logo-line {
+                                height: 0.2mm;
+                                width: 60%;
+                                background: rgba(0,0,0,0.2);
+                                margin-bottom: 1mm;
+                              }
+                              .sub { 
+                                font-size: 6pt; 
+                                text-transform: uppercase; 
+                                color: #666; 
+                                margin: 0; 
+                                line-height: 1; 
+                                letter-spacing: 0.3em; 
+                                font-weight: 500;
+                              }
+                              .name-area {
+                                flex: 1;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                width: 100%;
+                                padding: 0 2mm;
+                                box-sizing: border-box;
+                              }
+                              .name { 
+                                font-size: 15pt; 
+                                font-weight: 900; 
+                                text-transform: uppercase; 
+                                margin: 0; 
+                                text-align: center; 
+                                line-height: 1.1;
+                                font-family: 'Playfair Display', serif;
+                                letter-spacing: -0.02em;
+                                display: -webkit-box;
+                                -webkit-line-clamp: 2;
+                                -webkit-box-orient: vertical;
+                                overflow: hidden;
+                              }
+                              .footer { 
+                                width: 100%;
+                                display: flex; 
+                                flex-direction: column;
+                                align-items: center;
+                                gap: 0.5mm;
+                              }
+                              .bottom-row {
+                                width: 100%;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-end;
+                                border-top: 0.1mm solid rgba(0,0,0,0.1);
+                                padding-top: 1mm;
+                              }
+                              .code-group {
+                                display: flex;
+                                flex-direction: column;
+                                align-items: flex-start;
+                              }
+                              .code { font-size: 6pt; font-family: monospace; margin: 0; font-weight: bold; color: #888; }
+                              .origin { font-size: 5pt; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; margin: 0; }
+                              .size { font-size: 9pt; font-weight: 900; margin: 0; font-style: italic; }
+                              .qr {
+                                position: absolute;
+                                right: 2mm;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                width: 9mm;
+                                height: 9mm;
+                                border: 0.1mm solid rgba(0,0,0,0.05);
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="label">
+                              <div class="disclaimer-bar">
+                                <p class="disclaimer-text">*Inspiración Olfativa de Alta Gama</p>
+                              </div>
+                              <div class="content">
+                                <div class="logo-area">
+                                  <img class="logo-img" src="/logo.png" />
+                                  <div class="logo-line"></div>
+                                  <p class="sub">Nuestra Impresión</p>
+                                </div>
+                                <div class="name-area">
+                                  <p class="name">${labelProduct.name}</p>
+                                </div>
+                                <div class="footer">
+                                  <div class="bottom-row">
+                                    <div class="code-group">
+                                      <p class="code">REF: B-${labelProduct.id.substring(0, 6).toUpperCase()}</p>
+                                      <p class="origin">Santo Domingo, RD</p>
+                                    </div>
+                                    <p class="size">30ml - 1.0oz</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/?p=' + labelProduct.id)}" />
+                            </div>
+                            <script>
+                              window.onload = () => {
+                                setTimeout(() => {
+                                  window.print();
+                                  window.close();
+                                }, 300);
+                              };
+                            </script>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    }}
+                    className="w-full py-4 bg-gold-primary text-black font-bold uppercase tracking-widest text-xs hover:bg-gold-light transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Printer size={16} /> Imprimir Etiqueta
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </>
         )}
