@@ -4,7 +4,8 @@ import {
   Copy, LogOut, Lock, CheckCircle, AlertCircle, Loader2,
   ChevronRight, Instagram, Facebook, Sparkles, Upload, Send,
   Wind, Droplets, Flame, Leaf, Zap,
-  Sun, Moon, Snowflake, Umbrella, Smile, Frown, Meh
+  Sun, Moon, Snowflake, Umbrella, Smile, Frown, Meh,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { 
@@ -64,6 +65,15 @@ interface Subscriber {
   id: string;
   email: string;
   date: any;
+}
+
+interface Review {
+  id: string;
+  userName: string;
+  comment: string;
+  rating: number;
+  date: any;
+  img?: string;
 }
 
 // --- Components ---
@@ -287,6 +297,33 @@ export default function App() {
   const [todayVisits, setTodayVisits] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      q: "¿Son perfumes originales?",
+      a: "Nuestras fragancias son inspiraciones olfativas de alta gama (Dupes) elaboradas con esencias importadas. No son el producto de marca original, pero garantizamos una similitud del 95% al 99% en aroma y fijación."
+    },
+    {
+      q: "¿Cuánto dura el aroma en la piel?",
+      a: "Nuestras fragancias son Eau de Parfum con alta concentración. La duración promedio es de 8 a 12 horas, variando según el pH de la piel y la familia olfativa."
+    },
+    {
+      q: "¿Cómo se realizan los envíos?",
+      a: "Realizamos envíos a toda la República Dominicana a través de Metro Pac, Caribe Pack o mensajería privada en Santo Domingo."
+    },
+    {
+      q: "¿Cuáles son los métodos de pago?",
+      a: "Aceptamos transferencias bancarias (Banreservas, BHD, Popular) y efectivo contra entrega en zonas seleccionadas de la capital."
+    },
+    {
+      q: "¿Tienen tienda física?",
+      a: "Somos una tienda exclusivamente online con base en Santo Domingo, lo que nos permite ofrecerte la mejor calidad al precio más competitivo del mercado."
+    }
+  ];
 
   // --- Auth & Data Fetching ---
   useEffect(() => {
@@ -326,9 +363,14 @@ export default function App() {
         if (docSnap.exists()) setTodayVisits(docSnap.data().count);
       });
 
+      const unsubReviews = onSnapshot(query(collection(db, "reviews"), orderBy("date", "desc")), (snapshot) => {
+        setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
+      });
+
       return () => {
         unsubSubs();
         unsubVisits();
+        unsubReviews();
       };
     }
   }, [user, isAdminOpen]);
@@ -445,6 +487,161 @@ export default function App() {
 
   const [isSmartLoading, setIsSmartLoading] = useState(false);
 
+  const getAIPerfumeData = async (name: string) => {
+    console.log(`Requesting AI data for: ${name}`);
+    if (!process.env.GEMINI_API_KEY) throw new Error('API_KEY_MISSING');
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const model = "gemini-3-flash-preview";
+    
+    const prompt = `Utiliza Google Search para encontrar información REAL y VERIFICADA sobre el perfume "${name}".
+    
+    REQUISITOS DE DATOS:
+    - Extrae los "Acordes Principales" (Main Accords) con su nombre, color representativo en hex y un valor de 0 a 100.
+    - Descripción de 2 frases.
+    - Notas de Salida (Top Notes), Corazón (Heart Notes) y Fondo (Base Notes).
+    - Familia Olfativa (DEBE ser uno de estos: citrico, amaderado, floral, oriental, fresco, frutal, cuero, almizclado, dulce, chipre, aromatico, especiado, fougere, acuatico).
+    - Extrae las Valoraciones de Usuarios (Puntuación): votos para "Me encanta", "Me gusta", "Me es indiferente", "No me gusta", "La odio", el total de votos y la calificación promedio (0-5).
+    - Extrae "Cuándo usarlo": porcentajes o valores (0-100) para Invierno, Primavera, Verano, Otoño, Día y Noche.
+    
+    Devuelve JSON:
+    {
+      "description": "...",
+      "notes": "...",
+      "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
+      "accords": [{"name": "...", "color": "...", "value": 100}, ...],
+      "composition": {
+        "top": ["nota1", "nota2", ...],
+        "heart": ["nota1", "nota2", ...],
+        "base": ["nota1", "nota2", ...]
+      },
+      "ratings": {
+        "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
+      },
+      "usage": {
+        "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
+      }
+    }
+    Responde SOLO el JSON.`;
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json"
+        }
+      });
+    } catch (searchErr: any) {
+      const errorString = JSON.stringify(searchErr).toLowerCase() + (searchErr.message || "").toLowerCase();
+      if (errorString.includes('429') || errorString.includes('quota') || errorString.includes('exhausted')) {
+        response = await ai.models.generateContent({
+          model,
+          contents: `Genera información sobre el perfume "${name}" basándote en tu conocimiento. No uses Google Search.
+          
+          Devuelve JSON:
+          {
+            "description": "...",
+            "notes": "...",
+            "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
+            "accords": [{"name": "...", "color": "...", "value": 100}, ...],
+            "composition": {
+              "top": ["nota1", "nota2", ...],
+              "heart": ["nota1", "nota2", ...],
+              "base": ["nota1", "nota2", ...]
+            },
+            "ratings": {
+              "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
+            },
+            "usage": {
+              "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
+            }
+          }
+          Responde SOLO el JSON.`,
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
+      } else {
+        throw searchErr;
+      }
+    }
+
+    return JSON.parse(response.text || '{}');
+  };
+
+  const handleBulkUpdate = async () => {
+    console.log("Bulk update starting...");
+    addToast("Analizando catálogo para actualizaciones...", "warning");
+    
+    if (!products || products.length === 0) {
+      console.log("No products found in state");
+      addToast("No hay productos cargados en el sistema.", "error");
+      return;
+    }
+
+    // Filtrar solo los que necesitan actualización
+    const productsToUpdate = products.filter(p => 
+      !p.composition || 
+      !p.ratings || 
+      !p.usage || 
+      (!p.accords || p.accords.length === 0) ||
+      !p.notes
+    );
+
+    console.log("Products to update:", productsToUpdate.length);
+
+    if (productsToUpdate.length === 0) {
+      addToast("¡Tu catálogo ya está completo! No hay nada que actualizar.", "success");
+      return;
+    }
+
+    // En lugar de confirm, usamos un pequeño delay y empezamos
+    setIsBulkUpdating(true);
+    setBulkProgress({ current: 0, total: productsToUpdate.length });
+    addToast(`Iniciando actualización de ${productsToUpdate.length} perfumes...`, "success");
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < productsToUpdate.length; i++) {
+      const prod = productsToUpdate[i];
+      console.log(`Updating product ${i+1}/${productsToUpdate.length}: ${prod.name}`);
+      setBulkProgress({ current: i + 1, total: productsToUpdate.length });
+      
+      try {
+        const data = await getAIPerfumeData(prod.name);
+        
+        const updateData: any = {};
+        if (!prod.desc || prod.desc.length < 10) updateData.desc = data.description || prod.desc;
+        if (!prod.notes) updateData.notes = data.notes || '';
+        if (!prod.family) updateData.family = data.family || '';
+        if (!prod.accords || prod.accords.length === 0) updateData.accords = data.accords || [];
+        if (!prod.composition) updateData.composition = data.composition || null;
+        if (!prod.ratings) updateData.ratings = data.ratings || null;
+        if (!prod.usage) updateData.usage = data.usage || null;
+
+        if (Object.keys(updateData).length > 0) {
+          await updateDoc(doc(db, "products", prod.id), updateData);
+          console.log(`Successfully updated ${prod.name}`);
+        } else {
+          console.log(`No new data needed for ${prod.name}`);
+        }
+        
+        successCount++;
+        // Delay para respetar límites de cuota de la IA
+        await new Promise(resolve => setTimeout(resolve, 2500));
+      } catch (err) {
+        console.error(`Error updating ${prod.name}:`, err);
+        errorCount++;
+      }
+    }
+    
+    setIsBulkUpdating(false);
+    addToast(`Proceso terminado. Actualizados: ${successCount}, Errores: ${errorCount}`);
+  };
+
   const handleSmartFill = async (formRef: HTMLFormElement) => {
     const name = (formRef.elements.namedItem('name') as HTMLInputElement).value;
     if (!name) {
@@ -456,101 +653,13 @@ export default function App() {
     addToast("Buscando información en Google...");
 
     try {
-      console.log("Iniciando búsqueda inteligente para:", name);
-      if (!process.env.GEMINI_API_KEY) {
-        console.error("GEMINI_API_KEY no encontrada en process.env");
-        throw new Error('API_KEY_MISSING');
-      }
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const model = "gemini-3-flash-preview";
-      
-      const prompt = `Utiliza Google Search para encontrar información REAL y VERIFICADA sobre el perfume "${name}".
-      
-      REQUISITOS DE DATOS:
-      - Extrae los "Acordes Principales" (Main Accords) con su nombre, color representativo en hex y un valor de 0 a 100.
-      - Descripción de 2 frases.
-      - Notas de Salida (Top Notes), Corazón (Heart Notes) y Fondo (Base Notes).
-      - Familia Olfativa (DEBE ser uno de estos: citrico, amaderado, floral, oriental, fresco, frutal, cuero, almizclado, dulce, chipre, aromatico, especiado, fougere, acuatico).
-      - Extrae las Valoraciones de Usuarios (Puntuación): votos para "Me encanta", "Me gusta", "Me es indiferente", "No me gusta", "La odio", el total de votos y la calificación promedio (0-5).
-      - Extrae "Cuándo usarlo": porcentajes o valores (0-100) para Invierno, Primavera, Verano, Otoño, Día y Noche.
-      
-      Devuelve JSON:
-      {
-        "description": "...",
-        "notes": "...",
-        "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-        "accords": [{"name": "...", "color": "...", "value": 100}, ...],
-        "composition": {
-          "top": ["nota1", "nota2", ...],
-          "heart": ["nota1", "nota2", ...],
-          "base": ["nota1", "nota2", ...]
-        },
-        "ratings": {
-          "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
-        },
-        "usage": {
-          "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
-        }
-      }
-      Responde SOLO el JSON.`;
-
-      let response;
-      try {
-        response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            tools: [{ googleSearch: {} }],
-            responseMimeType: "application/json"
-          }
-        });
-      } catch (searchErr: any) {
-        const errorString = JSON.stringify(searchErr).toLowerCase() + (searchErr.message || "").toLowerCase();
-        if (errorString.includes('429') || errorString.includes('quota') || errorString.includes('exhausted')) {
-          console.warn("Cuota de búsqueda agotada, intentando sin Google Search...");
-          addToast("Búsqueda limitada, usando conocimiento base...", "warning");
-          response = await ai.models.generateContent({
-            model,
-            contents: `Genera información sobre el perfume "${name}" basándote en tu conocimiento. No uses Google Search.
-            
-            Devuelve JSON:
-            {
-              "description": "...",
-              "notes": "...",
-              "family": "citrico | amaderado | floral | oriental | fresco | frutal | cuero | almizclado | dulce | chipre | aromatico | especiado | fougere | acuatico",
-              "accords": [{"name": "...", "color": "...", "value": 100}, ...],
-              "composition": {
-                "top": ["nota1", "nota2", ...],
-                "heart": ["nota1", "nota2", ...],
-                "base": ["nota1", "nota2", ...]
-              },
-              "ratings": {
-                "love": 0, "like": 0, "ok": 0, "dislike": 0, "hate": 0, "total": 0, "average": 0
-              },
-              "usage": {
-                "winter": 0, "spring": 0, "summer": 0, "autumn": 0, "day": 0, "night": 0
-              }
-            }
-            Responde SOLO el JSON.`,
-            config: {
-              responseMimeType: "application/json"
-            }
-          });
-        } else {
-          throw searchErr;
-        }
-      }
-
-      console.log("Respuesta de IA recibida:", response);
-      const data = JSON.parse(response.text || '{}');
-      console.log("Datos parseados:", data);
+      const data = await getAIPerfumeData(name);
       
       if (data.description) (formRef.elements.namedItem('desc') as HTMLInputElement).value = data.description;
       if (data.notes) (formRef.elements.namedItem('notes') as HTMLTextAreaElement).value = data.notes;
       
       if (data.family) {
         const familySelect = formRef.elements.namedItem('family') as HTMLSelectElement;
-        // Normalizar y buscar coincidencia
         const normalizedFamily = data.family.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const options = Array.from(familySelect.options);
         const match = options.find(opt => opt.value === normalizedFamily || opt.text.toLowerCase().includes(normalizedFamily));
@@ -565,13 +674,7 @@ export default function App() {
       addToast("¡Información importada! Ahora pega el link de la imagen.");
     } catch (err: any) {
       console.error("Error en Smart Fill:", err);
-      if (err.message === 'API_KEY_MISSING') {
-        addToast("Error: GEMINI_API_KEY no configurada en Azure", "error");
-      } else if (err.message?.includes('429') || err.message?.includes('quota')) {
-        addToast("Cuota de IA agotada. Por favor, intenta de nuevo en unos minutos.", "error");
-      } else {
-        addToast(`Error: ${err.message || "No pude encontrar la información"}`, "error");
-      }
+      addToast(`Error: ${err.message || "No pude encontrar la información"}`, "error");
     } finally {
       setIsSmartLoading(false);
     }
@@ -895,6 +998,92 @@ export default function App() {
         )}
       </section>
 
+      {/* Reviews Section */}
+      <section className="py-24 bg-black border-t border-white/5">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-4xl text-white mb-4">Experiencias Black Scent</h2>
+            <p className="text-gray-500 uppercase tracking-[0.3em] text-[10px] font-bold">Lo que dicen nuestros clientes</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {reviews.map((review) => (
+              <motion.div 
+                key={review.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl flex flex-col h-full"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Sparkles key={i} size={12} className={i < review.rating ? "text-gold-primary fill-gold-primary" : "text-gray-800"} />
+                  ))}
+                </div>
+                <p className="text-gray-300 text-sm italic mb-6 flex-1">"{review.comment}"</p>
+                
+                {review.img && (
+                  <div className="mb-6 rounded-lg overflow-hidden border border-white/10">
+                    <img src={review.img} alt="Review" className="w-full h-auto object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pt-6 border-t border-white/5">
+                  <div className="w-8 h-8 rounded-full bg-gold-primary/20 flex items-center justify-center text-gold-primary font-bold text-xs">
+                    {review.userName.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-bold uppercase tracking-widest">{review.userName}</p>
+                    <p className="text-gray-600 text-[10px] uppercase tracking-tighter">Cliente Verificado</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-24 bg-[#050505] border-t border-white/5">
+        <div className="container mx-auto px-6 max-w-3xl">
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-4xl text-white mb-4">Preguntas Frecuentes</h2>
+            <p className="text-gray-500 uppercase tracking-[0.3em] text-[10px] font-bold">Todo lo que necesitas saber</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <div key={i} className="border border-white/5 bg-black/50 rounded-xl overflow-hidden">
+                <button 
+                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                  className="w-full px-8 py-6 flex justify-between items-center text-left hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-white text-sm font-medium uppercase tracking-wider">{faq.q}</span>
+                  <ChevronDown 
+                    size={18} 
+                    className={`text-gold-primary transition-transform duration-300 ${activeFaq === i ? 'rotate-180' : ''}`} 
+                  />
+                </button>
+                <AnimatePresence>
+                  {activeFaq === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="px-8 pb-8 text-gray-400 text-sm leading-relaxed font-light">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Newsletter */}
       <section id="contact" className="py-24 bg-linear-to-t from-[#080808] to-bg-black border-t border-white/5">
         <div className="container mx-auto px-6 text-center max-w-3xl">
@@ -921,9 +1110,9 @@ export default function App() {
           <div className="flex flex-col items-center mb-12">
             <img src="https://ais-dev-uru7fbuvlp3bo4yq3ief6a-68095328393.us-east5.run.app/bs.jpeg" alt="Black Scent Logo" className="h-24 w-auto mb-6 opacity-80 hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
             <div className="flex justify-center gap-8 text-gray-500">
-              <a href="#" className="hover:text-gold-primary transition-all hover:scale-110"><Instagram size={22} /></a>
-              <a href="#" className="hover:text-gold-primary transition-all hover:scale-110"><Facebook size={22} /></a>
-              <a href="https://wa.me/573123456789" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><MessageCircle size={22} /></a>
+              <a href="https://instagram.com/blackscent" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><Instagram size={22} /></a>
+              <a href="https://facebook.com/blackscent" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><Facebook size={22} /></a>
+              <a href="https://wa.me/18096176188" target="_blank" className="hover:text-gold-primary transition-all hover:scale-110"><MessageCircle size={22} /></a>
             </div>
           </div>
           
@@ -937,17 +1126,17 @@ export default function App() {
             <div>
               <h4 className="text-gold-primary uppercase tracking-widest text-xs font-bold mb-6">Atención al Cliente</h4>
               <ul className="text-gray-500 text-sm space-y-3">
-                <li><a href="#" className="hover:text-white transition-colors">Envíos Nacionales</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Garantía de Calidad</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Preguntas Frecuentes</a></li>
+                <li><a href="https://wa.me/18096176188?text=Hola, tengo una duda sobre los envíos nacionales" target="_blank" className="hover:text-white transition-colors">Envíos Nacionales</a></li>
+                <li><a href="https://wa.me/18096176188?text=Hola, me gustaría saber sobre la garantía de calidad" target="_blank" className="hover:text-white transition-colors">Garantía de Calidad</a></li>
+                <li><a href="#faq" className="hover:text-white transition-colors">Preguntas Frecuentes</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-gold-primary uppercase tracking-widest text-xs font-bold mb-6">Contacto</h4>
               <ul className="text-gray-500 text-sm space-y-3">
-                <li>Bogotá, Colombia</li>
-                <li>WhatsApp: +57 312 345 6789</li>
-                <li>Email: info@blackscent.com</li>
+                <li>Santo Domingo, República Dominicana</li>
+                <li><a href="https://wa.me/18096176188" target="_blank" className="hover:text-white transition-colors">WhatsApp: +1 809 617 6188</a></li>
+                <li><a href="mailto:info@blackscent.com" className="hover:text-white transition-colors">Email: info@blackscent.com</a></li>
               </ul>
             </div>
           </div>
@@ -1343,6 +1532,23 @@ export default function App() {
                     </div>
                   </div>
                   <div className="flex gap-4">
+                    <button 
+                      onClick={handleBulkUpdate}
+                      disabled={isBulkUpdating}
+                      className={`flex items-center gap-2 px-6 py-3 border border-gold-primary/30 text-gold-primary hover:bg-gold-primary hover:text-black transition-all text-xs uppercase tracking-widest font-bold ${isBulkUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isBulkUpdating ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Actualizando {bulkProgress.current}/{bulkProgress.total}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} />
+                          Actualizar Todo el Catálogo
+                        </>
+                      )}
+                    </button>
                     <div className="bg-white/5 px-6 py-3 rounded border border-white/10 text-center">
                       <span className="block text-gold-primary font-bold text-xl">{todayVisits}</span>
                       <span className="text-[8px] uppercase tracking-widest text-gray-500">Visitas Hoy</span>
@@ -1492,6 +1698,59 @@ export default function App() {
                         </div>
                         <button type="submit" className="w-full py-4 bg-gold-primary text-black font-bold uppercase tracking-widest text-xs">Crear Producto</button>
                       </form>
+                    </div>
+
+                    <div className="bg-[#0a0a0a] border border-white/5 p-8">
+                      <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                        <h3 className="text-white uppercase tracking-widest text-sm">Gestionar Reseñas</h3>
+                        <Sparkles size={16} className="text-gold-primary" />
+                      </div>
+                      <form 
+                        className="space-y-4 mb-8"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const form = e.currentTarget;
+                          const name = (form.elements.namedItem('userName') as HTMLInputElement).value;
+                          const comment = (form.elements.namedItem('comment') as HTMLTextAreaElement).value;
+                          const rating = parseInt((form.elements.namedItem('rating') as HTMLSelectElement).value);
+                          const img = (form.elements.namedItem('img') as HTMLInputElement).value;
+                          
+                          try {
+                            await addDoc(collection(db, "reviews"), {
+                              userName: name,
+                              comment,
+                              rating,
+                              img: img || null,
+                              date: new Date()
+                            });
+                            addToast("Reseña añadida");
+                            form.reset();
+                          } catch (err) {
+                            addToast("Error al añadir reseña", "error");
+                          }
+                        }}
+                      >
+                        <input name="userName" placeholder="Nombre del Cliente" required className="w-full bg-black border border-gray-800 p-3 text-white text-xs focus:border-gold-primary outline-none" />
+                        <textarea name="comment" placeholder="Comentario..." required rows={3} className="w-full bg-black border border-gray-800 p-3 text-white text-xs focus:border-gold-primary outline-none" />
+                        <select name="rating" className="w-full bg-black border border-gray-800 p-3 text-white text-xs focus:border-gold-primary outline-none">
+                          <option value="5">5 Estrellas</option>
+                          <option value="4">4 Estrellas</option>
+                          <option value="3">3 Estrellas</option>
+                        </select>
+                        <input name="img" placeholder="URL de Imagen (Opcional - Captura de pantalla)" className="w-full bg-black border border-gray-800 p-3 text-white text-xs focus:border-gold-primary outline-none" />
+                        <button type="submit" className="w-full py-3 bg-gold-primary text-black font-bold uppercase tracking-widest text-[10px]">Añadir Reseña</button>
+                      </form>
+
+                      <div className="max-h-[300px] overflow-y-auto space-y-3">
+                        {reviews.map(r => (
+                          <div key={r.id} className="text-[10px] text-gray-500 flex justify-between items-center bg-black p-3 border border-white/5">
+                            <div className="truncate mr-2">
+                              <span className="text-white font-bold">{r.userName}</span>: {r.comment.substring(0, 30)}...
+                            </div>
+                            <button onClick={() => deleteDoc(doc(db, "reviews", r.id))} className="text-red-500/30 hover:text-red-500"><Trash2 size={12} /></button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="bg-[#0a0a0a] border border-white/5 p-8">
