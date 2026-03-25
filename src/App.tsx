@@ -465,7 +465,7 @@ export default function App() {
   const handleCheckout = () => {
     if (cart.length === 0) return;
     let msg = "Hola Black Scent, me gustaría realizar el siguiente pedido:\n\n";
-    cart.forEach(item => { msg += `- ${item.qty}x ${item.name} ($${item.price * item.qty})\n`; });
+    cart.forEach(item => { msg += `- ${item.qty}x ${item.name} (30ml) ($${item.price * item.qty})\n`; });
     msg += `\n*Total a pagar: $${cartTotal}.00*`;
     msg += "\n\nQuedo en espera de los datos de pago.";
     window.open(`https://wa.me/18096176188?text=${encodeURIComponent(msg)}`, '_blank');
@@ -1037,7 +1037,7 @@ export default function App() {
                     <h3 className="text-white text-sm uppercase tracking-widest mb-1 font-medium">{prod.name}</h3>
                     <p className="text-gray-600 text-[10px] mb-4 line-clamp-1">{prod.desc}</p>
                     
-                    <div className="font-serif text-lg text-gold-primary mb-4 italic">
+                    <div className="font-serif text-lg text-gold-primary mb-1 italic">
                       {isOffer && prod.oldPrice ? (
                         <div className="flex justify-center items-center gap-2">
                           <span className="text-gray-600 text-sm line-through font-sans not-italic">${prod.oldPrice}</span>
@@ -1047,6 +1047,7 @@ export default function App() {
                         <span>${prod.price}.00</span>
                       )}
                     </div>
+                    <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-4">Frasco de 30ml (Estándar)</p>
 
                     {isOffer && prod.targetDate && <Countdown targetDate={prod.targetDate} variant="red" />}
                   </div>
@@ -1234,6 +1235,10 @@ export default function App() {
               {
                 q: "¿Por qué el precio es tan bajo si la calidad es alta?",
                 a: "Eliminamos los costos excesivos de marketing, licencias de marca, frascos de diseño costosos y márgenes de intermediarios. En Black Scent, pagas por el **líquido y la calidad del aroma**, no por el nombre de la marca en la caja."
+              },
+              {
+                q: "¿Qué tamaños manejan?",
+                a: "Nuestra medida estándar y el precio mostrado corresponde a frascos de **30ml (1.0 fl.oz)**. Si deseas una presentación de mayor tamaño, puedes **contactarnos directamente** para consultar disponibilidad y precios especiales."
               }
             ].map((item, i) => (
               <motion.div 
@@ -1465,18 +1470,23 @@ export default function App() {
                 </div>
                 <div className="pt-4 md:pt-0">
                   <h2 className="font-serif text-3xl md:text-4xl text-gold-primary mb-2 md:mb-4">{selectedProduct.name}</h2>
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-2">
                     <div className="text-xl md:text-2xl font-serif text-white italic">${selectedProduct.price}.00</div>
                     <div className="px-3 py-1 bg-gold-primary/10 border border-gold-primary/30 rounded-full">
                       <span className="text-gold-primary text-[9px] uppercase tracking-widest font-bold">95-100% Similitud</span>
                     </div>
                   </div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mb-6">Presentación Estándar: 30ml / 1.0 fl.oz</p>
                   
                   <div className="space-y-4 md:space-y-6 text-gray-400 font-light leading-relaxed text-sm md:text-base">
                     <p className="text-white/90 font-medium italic border-l-2 border-gold-primary pl-4 py-1 bg-white/5">
                       Inspiración de Alta Gama: Una recreación magistral con fidelidad olfativa superior y máxima fijación.
                     </p>
                     <p>{selectedProduct.desc}</p>
+                    <div className="p-4 bg-gold-primary/5 border border-gold-primary/20 rounded-lg">
+                      <p className="text-xs text-gold-primary font-medium mb-1 uppercase tracking-widest">¿Deseas una presentación mayor?</p>
+                      <p className="text-xs text-gray-400">Nuestra medida estándar es de 30ml. Si te interesa adquirir este aroma en presentaciones de mayor volumen, por favor contáctanos directamente vía WhatsApp.</p>
+                    </div>
                     {selectedProduct.notes && (
                       <div className="p-4 bg-white/5 border-l-2 border-gold-primary italic">
                         <p className="text-sm text-gray-300">"{selectedProduct.notes}"</p>
