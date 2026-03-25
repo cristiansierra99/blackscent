@@ -849,6 +849,15 @@ export default function App() {
           transition={{ duration: 1 }}
           className="relative z-10 text-center px-6"
         >
+          <motion.img 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 1.2 }}
+            src="/logo.png" 
+            alt="Black Scent Logo" 
+            className="h-32 md:h-48 w-auto mx-auto mb-8 drop-shadow-[0_0_30px_rgba(212,175,55,0.3)]"
+            referrerPolicy="no-referrer"
+          />
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1058,6 +1067,59 @@ export default function App() {
             })}
           </motion.div>
         )}
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-24 bg-[#050505] border-t border-white/5">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 bg-gold-primary/10 blur-3xl rounded-full" />
+              <img 
+                src="/logo.png" 
+                alt="Black Scent Logo" 
+                className="relative w-full max-w-md mx-auto drop-shadow-[0_0_50px_rgba(212,175,55,0.2)]"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
+              <div className="space-y-2">
+                <span className="text-gold-primary text-[10px] uppercase tracking-[0.4em] font-bold">Nuestra Historia</span>
+                <h2 className="font-serif text-4xl md:text-5xl text-white tracking-tighter">EL ARTE DE LA INSPIRACIÓN</h2>
+              </div>
+              
+              <div className="space-y-6 text-gray-400 font-light leading-relaxed">
+                <p>
+                  En <strong className="text-gold-primary">Black Scent Parfums</strong>, creemos que el lujo no debería ser un privilegio, sino una experiencia diaria. Nuestra misión es democratizar la alta perfumería a través de inspiraciones olfativas de fidelidad insuperable.
+                </p>
+                <p>
+                  Cada una de nuestras fragancias es el resultado de un meticuloso proceso de análisis y recreación, utilizando esencias importadas de la más alta calidad para garantizar una similitud del 95% al 100% con los iconos del lujo mundial.
+                </p>
+                <div className="grid grid-cols-2 gap-8 pt-4">
+                  <div>
+                    <h4 className="text-white font-serif text-2xl mb-1">95-100%</h4>
+                    <p className="text-[10px] uppercase tracking-widest text-gold-primary">Similitud Olfativa</p>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-serif text-2xl mb-1">8-12h</h4>
+                    <p className="text-[10px] uppercase tracking-widest text-gold-primary">Fijación en Piel</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* Reviews Section */}
